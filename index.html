@@ -2,7 +2,6 @@
 <html>
 <head>
   <title>File Converter</title>
-  <script src="converter.js"></script>
 </head>
 <body>
   <h1>File Converter</h1>
@@ -55,7 +54,7 @@
         reader.readAsText(file);
       });
     }
-    
+
     function convert(objContent, mtlContent) {
       const models = [];
 
@@ -207,9 +206,9 @@
             (currentModel.normal[normalIndex * 3]).toFixed(4) + ',' +
             (currentModel.normal[normalIndex * 3 + 1]).toFixed(4) + ',' +
             (currentModel.normal[normalIndex * 3 + 2]).toFixed(4) + ',' +
-            (currentModel.colour[pointerIndex * 3]).toFixed(4) + ',' +
-            (currentModel.colour[pointerIndex * 3 + 1]).toFixed(4) + ',' +
-            (currentModel.colour[pointerIndex * 3 + 2]).toFixed(4) + '\n'
+            (currentModel.colour[(pointerIndex - 1) * 9]).toFixed(4) + ',' +
+            (currentModel.colour[(pointerIndex - 1) * 9 + 1]).toFixed(4) + ',' +
+            (currentModel.colour[(pointerIndex - 1) * 9 + 2]).toFixed(4) + ','
           );
         }
       }
@@ -218,12 +217,15 @@
     }
 
     function insert(value) {
-      return (value >= 0) ? (' ' + value) : value;
+      const str = value.toString();
+      return str.substring(0, str.indexOf('.') + 5);
     }
 
     function displayOutput(content) {
-      const outputElement = document.getElementById('output');
-      outputElement.innerHTML = '<pre>' + content + '</pre>';
+      const outputDiv = document.getElementById('output');
+      const p = document.createElement('p');
+      p.textContent = content;
+      outputDiv.appendChild(p);
     }
   </script>
 </body>
