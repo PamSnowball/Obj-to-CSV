@@ -1,81 +1,73 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>File Conversion</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-        }
-        
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        h1 {
-            text-align: center;
-        }
-        
-        label {
-            font-weight: bold;
-        }
-        
-        input[type="file"] {
-            margin-bottom: 10px;
-        }
-        
-        button {
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-    </style>
+  <title>File Converter</title>
+  <script src="converter.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>File Conversion</h1>
-        <form id="conversionForm" enctype="multipart/form-data">
-            <div>
-                <label for="objFiles">Select .obj Files:</label>
-                <input type="file" id="objFiles" name="objFiles" multiple accept=".obj">
-            </div>
-            <div>
-                <label for="mtlFiles">Select .mtl Files:</label>
-                <input type="file" id="mtlFiles" name="mtlFiles" multiple accept=".mtl">
-            </div>
-            <button type="submit">Convert to CSV</button>
-        </form>
-    </div>
+  <h1>File Converter</h1>
+  <input type="file" id="objFile" multiple accept=".obj">
+  <input type="file" id="mtlFile" multiple accept=".mtl">
+  <button onclick="convertFiles()">Convert</button>
+  <div id="output"></div>
 
-    <script>
-        document.getElementById('conversionForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            
-            var formData = new FormData();
-            var objFiles = document.getElementById('objFiles').files;
-            var mtlFiles = document.getElementById('mtlFiles').files;
+  <script>
+    function convertFiles() {
+      const objFiles = document.getElementById('objFile').files;
+      const mtlFiles = document.getElementById('mtlFile').files;
 
-            for (var i = 0; i < objFiles.length; i++) {
-                formData.append('objFiles', objFiles[i]);
-            }
-            
-            for (var i = 0; i < mtlFiles.length; i++) {
-                formData.append('mtlFiles', mtlFiles[i]);
-            }
-            
-            var xhr = new XMLHttpRequest();
-            xhr.open('POST', '/convert', true);
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-                    var response = JSON.parse(xhr.responseText);
-                    // Process the response, display or provide download link for the converted CSV file
-                }
-            };
-            xhr.send(formData);
-        });
-    </script>
+      if (objFiles.length !== mtlFiles.length) {
+        alert('Number of OBJ files must match number of MTL files.');
+        return;
+      }
+
+      const convertedFiles = [];
+
+      for (let i = 0; i < objFiles.length; i++) {
+        const objFile = objFiles[i];
+        const mtlFile = mtlFiles[i];
+
+        const reader = new FileReader();
+
+        reader.onload = function (event) {
+          const objContent = event.target.result;
+          const mtlContent = getMtlContent(mtlFile);
+
+          const convertedFile = convert(objContent, mtlContent);
+          convertedFiles.push(convertedFile);
+
+          if (convertedFiles.length === objFiles.length) {
+            const mergedCsvFile = mergeFiles(convertedFiles);
+            displayOutput(mergedCsvFile);
+          }
+        };
+
+        reader.readAsText(objFile);
+      }
+    }
+
+    function getMtlContent(mtlFile) {
+      // Implement logic to read MTL file content
+      // and return it as a string
+    }
+
+    function convert(objContent, mtlContent) {
+      // Implement the file conversion logic
+      // based on your existing Java code
+      // Modify the method to accept strings as input
+      // Return the converted file content as a string
+    }
+
+    function mergeFiles(files) {
+      // Implement logic to merge the converted files
+      // into a single CSV file
+      // Return the merged CSV file content as a string
+    }
+
+    function displayOutput(content) {
+      const outputElement = document.getElementById('output');
+      outputElement.innerHTML = '<pre>' + content + '</pre>';
+    }
+  </script>
 </body>
 </html>
