@@ -31,21 +31,16 @@
 
         reader.onload = function (event) {
           const objContent = event.target.result;
-          const mtlContent = document.getElementById('input').files[i];
+          const mtlContent = document.getElementById('mtlFile').files[i];
 
           const convertedFile = convert(objContent, mtlContent);
           convertedFiles.push(convertedFile);
           
-          displayOutput(convertedFiles);
+          displayOutput(convertedFile);
         };
 
         reader.readAsText(objFile);
       }
-    }
-
-    function getMtlContent(mtlFile) {
-      // Implement logic to read MTL file content
-      // and return it as a string
     }
 
     function convert(objContent, mtlContent) {
