@@ -27,22 +27,16 @@
         const objFile = objFiles[i];
         const mtlFile = mtlFiles[i];
 
-        const objReader = new FileReader();
+        const reader = new FileReader();
 
-        objReader.onload = function (event1) {
-          const objContent = event1.target.result;
-          const mtlReader = new FileReader();
-          mtlReader.onload = function(event2) {
-            const mtlContent = event2.target.result;
-         
-            const convertedFile = convert(objContent, mtlContent);
-            convertedFiles.push(convertedFile);
+        reader.onload = function (event) {
+          const objContent = event.target.result;
+          const mtlContent = document.getElementById('input').files[i];
 
-            if (convertedFiles.length === objFiles.length) {
-              const mergedCsvFile = mergeFiles(convertedFiles);
-              displayOutput(mergedCsvFile);
-            }
-          }
+          const convertedFile = convert(objContent, mtlContent);
+          convertedFiles.push(convertedFile);
+          
+          displayOutput(convertedFiles);
         };
 
         reader.readAsText(objFile);
@@ -55,16 +49,168 @@
     }
 
     function convert(objContent, mtlContent) {
-      // Implement the file conversion logic
-      // based on your existing Java code
-      // Modify the method to accept strings as input
-      // Return the converted file content as a string
+      const models = [];
+
+      const objLines = objContent.split('\n');
+      const mtlLines = mtlContent.split('\n');
+
+      let pointer = [];
+      let faces = [];
+      let vertex = [];
+      let normal = [];
+      let colour = [];
+
+      for (let i = 0; i < objLines.length; i++) {
+        const objLine = objLines[i];
+        const objSplit = objLine.split(' ');
+
+        if (objSplit[0] === 'v') {
+          vertex.push(parseFloat(objSplit[1]));
+          vertex.push(parseFloat(objSplit[2]));
+          vertex.push(parseFloat(objSplit[3]));
+        }
+
+        if (objSplit[0] === 'vn') {
+          normal.push(parseFloat(objSplit[1]));
+          normal.push(parseFloat(objSplit[2]));
+          normal.push(parseFloat(objSplit[3]));
+        }
+
+        if (objSplit[0] === 'usemtl') {
+          faces.push('POINTER');
+          pointer.push(i);
+          for (let j = 0; j < mtlLines.length; j++) {
+            const mtlLine = mtlLines[j];
+            const mtlSplit = mtlLine.split(' ');
+            if (mtlSplit[0] === 'Kd') {
+              colour.push(parseFloat(mtlSplit[1]));
+              colour.push(parseFloat(mtlSplit[2]));
+              colour.push(parseFloat(mtlSplit[3]));
+            }
+          }
+        }
+
+        if (objSplit[0] === 'f') {
+          faces.push(objSplit[1]);
+          faces.push(objSplit[2]);
+          faces.push(objSplit[3]);
+          i += 2;
+        }
+      }
+
+      pointer.push(objLines.length);
+
+      checkMaterials(colour);
+
+      models.push({
+        pointer: pointer,
+        vertex: vertex,
+        normal: normal,
+        colour: colour,
+        faces: faces
+      });
+
+      return getModel(models);
     }
 
-    function mergeFiles(files) {
-      // Implement logic to merge the converted files
-      // into a single CSV file
-      // Return the merged CSV file content as a string
+    function checkMaterials(colour) {
+      for (let i = 0; i < colour.length; i++) {
+        if (i % 6 === 0) {
+          colour[i] = -1;
+          colour[i + 1] = 0;
+          colour[i + 2] = 0;
+        }
+      }
+
+      console.log(colour);
+    }
+
+    function getModel(models) {
+      const entities = [];
+
+      for (let k = 0; k < models.length; k++) {
+        const currentModel = models[k];
+
+        entities.push(insert(getMin(currentModel.vertex, 0)).toFixed(4) + ';');
+        entities.push(insert(getMin(currentModel.vertex, 1)).toFixed(4) + ';');
+        entities.push(insert(getMin(currentModel.vertex, 2)).toFixed(4) + ';');
+
+        entities.push(insert(getMax(currentModel.vertex, 0)).toFixed(4) + ';');
+        entities.push(insert(getMax(currentModel.vertex, 1)).toFixed(4) + ';');
+        entities.push(insert(getMax(currentModel.vertex, 2)).toFixed(4) + ';');
+
+        entities.push('1\n');
+
+        const pointerSize = currentModel.pointer.length - 1;
+
+        entities.push((currentModel.faces.length - pointerSize) + ';' + pointerSize);
+
+        entities.push(...loadModel(currentModel));
+      }
+
+      const outputEntity = entities.join('').replace(/,/g, '').replace(/\[/g, '').replace(/\]/g, '').replace(/ /g, '');
+
+      entities.length = 0;
+      entities.push('\n');
+
+      const componentText = entities.join('');
+
+      const result = outputEntity + componentText.replace('[', '').replace(']', '');
+
+      return result;
+    }
+
+    function getMin(arr, index) {
+      let min = arr[index];
+      for (let i = index; i < arr.length; i += 3) {
+        if (arr[i] < min) {
+          min = arr[i];
+        }
+      }
+      return min;
+    }
+
+    function getMax(arr, index) {
+      let max = arr[index];
+      for (let i = index; i < arr.length; i += 3) {
+        if (arr[i] > max) {
+          max = arr[i];
+        }
+      }
+      return max;
+    }
+
+    function loadModel(currentModel) {
+      const lines = [];
+
+      let pointerIndex = 0;
+
+      for (let j = 0; j < currentModel.faces.length; j += 3) {
+        if (currentModel.faces[j] === 'POINTER') {
+          pointerIndex++;
+        } else {
+          const vertexIndex = parseInt(currentModel.faces[j].split('/')[0]) - 1;
+          const normalIndex = parseInt(currentModel.faces[j].split('/')[2]) - 1;
+
+          lines.push(
+            (currentModel.vertex[vertexIndex * 3]).toFixed(4) + ',' +
+            (currentModel.vertex[vertexIndex * 3 + 1]).toFixed(4) + ',' +
+            (currentModel.vertex[vertexIndex * 3 + 2]).toFixed(4) + ',' +
+            (currentModel.normal[normalIndex * 3]).toFixed(4) + ',' +
+            (currentModel.normal[normalIndex * 3 + 1]).toFixed(4) + ',' +
+            (currentModel.normal[normalIndex * 3 + 2]).toFixed(4) + ',' +
+            (currentModel.colour[pointerIndex * 3]).toFixed(4) + ',' +
+            (currentModel.colour[pointerIndex * 3 + 1]).toFixed(4) + ',' +
+            (currentModel.colour[pointerIndex * 3 + 2]).toFixed(4) + '\n'
+          );
+        }
+      }
+
+      return lines;
+    }
+
+    function insert(value) {
+      return (value >= 0) ? (' ' + value) : value;
     }
 
     function displayOutput(content) {
