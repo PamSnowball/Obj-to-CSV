@@ -15,45 +15,45 @@
     function convertFiles() {
       const objFiles = document.getElementById('objFile').files;
       const mtlFiles = document.getElementById('mtlFile').files;
-      
+
       if (objFiles.length !== mtlFiles.length) {
         alert('Number of OBJ files must match number of MTL files.');
         return;
       }
-      
-      const files = group(objFiles, mtlFiles);
 
-      const convertedFiles = [];
+      const filePromises = [];
 
       for (let i = 0; i < objFiles.length; i++) {
         const objFile = objFiles[i];
         const mtlFile = mtlFiles[i];
 
-        const convertedFile = convert(files[i][0], files[i][1]);
-        convertedFiles.push(convertedFile);
-        
-        console.log("rastasrsa: " + convertedFile);
-        displayOutput(convertedFile);
+        const objPromise = readFile(objFile);
+        const mtlPromise = readFile(mtlFile);
+
+        filePromises.push(Promise.all([objPromise, mtlPromise]));
       }
+
+      Promise.all(filePromises)
+        .then(files => {
+          const convertedFiles = files.map(filePair => convert(filePair[0], filePair[1]));
+          convertedFiles.forEach(displayOutput);
+        })
+        .catch(error => {
+          console.error('Error reading file:', error);
+        });
     }
 
-    function group(objs, mtls) {
-      const objNames = objs.map(obj => obj.name.replace(/(.*)\//g, ''));
-      const mtlNames = mtls.map(mtl => mtl.name.replace(/(.*)\//g, ''));
-      const intersection = objNames.filter(element => mtlNames.includes(element));
-      
-      const output = [];
-      
-      for (let i = 0; i < objs.length; i++) for (let j = 0; j < mtls.length; j++) for (let k = 0; k < intersection.length; k++) {
-        if (intersection[k] == objs[i].name.replace(/(.*)\//g, '') && intersection[k] == mtls[j].name.replace(/(.*)\//g, '')) {
-          var out = []; 
-          out.push(objs[i]);
-          out.push(mtls[i]);
-          output.push(out);
-        }
-      }
-      
-      return output;
+    function readFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          resolve(event.target.result);
+        };
+        reader.onerror = (event) => {
+          reject(event.target.error);
+        };
+        reader.readAsText(file);
+      });
     }
     
     function convert(objContent, mtlContent) {
