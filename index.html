@@ -27,18 +27,21 @@
         const objFile = objFiles[i];
         const mtlFile = mtlFiles[i];
 
-        const reader = new FileReader();
+        const objReader = new FileReader();
 
-        reader.onload = function (event) {
-          const objContent = event.target.result;
-          const mtlContent = getMtlContent(mtlFile);
+        objReader.onload = function (event1) {
+          const objContent = event1.target.result;
+          const mtlReader = new FileReader();
+          mtlReader.onload = function(event2) {
+            const mtlContent = event2.target.result;
+         
+            const convertedFile = convert(objContent, mtlContent);
+            convertedFiles.push(convertedFile);
 
-          const convertedFile = convert(objContent, mtlContent);
-          convertedFiles.push(convertedFile);
-
-          if (convertedFiles.length === objFiles.length) {
-            const mergedCsvFile = mergeFiles(convertedFiles);
-            displayOutput(mergedCsvFile);
+            if (convertedFiles.length === objFiles.length) {
+              const mergedCsvFile = mergeFiles(convertedFiles);
+              displayOutput(mergedCsvFile);
+            }
           }
         };
 
